@@ -34,8 +34,14 @@ w2 = 2*np.random.random((4,1)) - 1
 #optimize weights
 
 Er_list = []
+optFound = False
+runs = 80000
+#split into segments to test cost vs benefit of runs
+#choose n within 2 ordes of magnitude of 'runs'
+num_segments = int(runs/100)
+rate = 3 #this is the % between segments that will make a segement the 'optimum'
 
-for i in range(50000):
+for i in range(runs):
 	#layer 1 is the input layer X
 	l1 = X
 	#layer 2 is X multiplied by the randomly generated weight matrix, w1
@@ -45,7 +51,7 @@ for i in range(50000):
 	l3 = nonlin(np.dot(l2, w2))
 
 	Er_l3 = y - l3
-	Er_list.append(Er_l3)
+	Er_list.append(np.mean(abs(Er_l3)))
 
 	#aka error of output mulitplied by the derivative of the output
 	#this find how far off our weights are
@@ -55,16 +61,64 @@ for i in range(50000):
 
 	l2_delta = Er_l2*nonlin(l2, deriv=True)
 
+	#keep within 1 order of magnitude of runs
 	if(i % 10000 == 0):
 		print('Error at run #{}: '.format(i), np.mean(np.abs(Er_l3)))
 		#print(w2,'\n')
+	
 
 	#update weights
 	w2 += l2.T.dot(l3_delta)
 	w1 += l1.T.dot(l2_delta)
 
-print('Input: ',X)
-print('Output: ',l3)
-print('Actual: ',y)
+	if(len(Er_list) > (num_segments*2) and (optFound == False)):
+		#if the relative difference between segents is less
+		# than 'rate' then we've found a (relatively) optimal number of runs
+		if(100*np.abs((Er_list[i-num_segments]- Er_list[i])/Er_list[i-num_segments]) < rate):
+			optPoint = i
+			optFound = True
+
+
+#print('Input: ',X)
+#print('Output: ',l3)
+#print('Actual: ',y)
+
+#print('\n\n\n',Er_list[2000] - Er_list[4000])
+fig, ax = plt.subplots()
+
+
+#ax.annotate('figure pixels',
+            #xy=(optPoint, Er_list[optPoint]), xycoords='figure pixels')
+
+
+if(optFound):
+	print('Optimum stopping point at', optPoint)
+	ax.annotate('optimum',
+    	xy=(optPoint, Er_list[optPoint]), xycoords='data',
+        xytext=(-15, 25), textcoords='offset points',
+        arrowprops=dict(facecolor='black', shrink=0.05),
+        horizontalalignment='right', verticalalignment='bottom')
+
+
+
 plt.plot(Er_list)
 plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
